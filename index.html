@@ -826,7 +826,105 @@
       width: 0%;
       transition: width 0.3s ease;
     }
+  
+    /* Keyboard Shortcuts & Formatting */
+    .editor-action-btn.format-btn {
+      background: var(--banner);
+      color: var(--ink);
+      font-weight: 700;
+      border-color: var(--ink);
+    }
+    .editor-action-btn.format-btn:hover {
+      background: var(--primary);
+      transform: translate(-1px, -1px);
+    }
+    .editor-shortcuts-hint {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
+    .shortcut-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: var(--chalk);
+      border: 1.5px solid var(--ink);
+      border-radius: var(--radius);
+      box-shadow: -2px 2px 0px 0px var(--ink);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink);
+      user-select: none;
+    }
+    .shortcut-tag kbd {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      border-radius: var(--radius);
+      padding: 1px 4px;
+      font-size: 10px;
+      font-weight: 700;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.15);
+    }
+
+    /* Mass Terminal Box */
+    .mass-terminal-wrapper {
+      background: #191c24;
+      border: var(--border-main);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-hard);
+      overflow: hidden;
+      margin-top: 16px;
+    }
+    .mass-terminal-header {
+      background: #0f1117;
+      border-bottom: 2px solid #383838;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #9ca3af;
+      text-transform: uppercase;
+    }
+    .terminal-status-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--mint);
+    }
+    .terminal-status-dot::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: var(--mint);
+      border-radius: 50%;
+      border: 1px solid #383838;
+      display: inline-block;
+    }
+    .mass-console-pre {
+      background: #191c24 !important;
+      color: #f4efea !important;
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      margin: 0;
+      border: none;
+    }
   </style>
+  <!-- Prettier Standalone for Code Formatting -->
+  <script src="https://cdn.jsdelivr.net/npm/prettier@3.3.3/standalone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prettier@3.3.3/plugins/babel.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prettier@3.3.3/plugins/estree.js"></script>
 </head>
 <body>
   <div class="marquee-strip">
@@ -924,7 +1022,10 @@
           <div class="editor-header">
             <span id="editorFilename">src/01-if-basic.js</span>
             <div class="editor-header-actions">
-              <button class="editor-action-btn" onclick="resetTaskCode()">↺ Скинути до шаблону</button>
+              <button class="editor-action-btn format-btn" id="btnFormatCode" onclick="formatCurrentCode()" title="Форматувати код (Shift + Alt + F або Ctrl + Shift + F)">
+                ✨ Форматувати (Shift + Alt + F)
+              </button>
+              <button class="editor-action-btn" onclick="resetTaskCode()">↺ Скинути</button>
             </div>
           </div>
           <textarea id="codeEditor" class="code-textarea" spellcheck="false"></textarea>
@@ -935,7 +1036,13 @@
           <button class="btn-run" onclick="runCurrentTaskTests()">
             ▶️ Перевірити рішення (Ctrl + Enter)
           </button>
-          <span id="saveNotice" style="font-size: 13px; color: var(--color-graphite);">Збережено в локальне сховище ✓</span>
+          <span id="saveNotice" style="font-size: 12px; font-weight: 600; color: var(--ink-muted);">Збережено в локальне сховище ✓</span>
+        </div>
+        <div class="editor-shortcuts-hint">
+          <span class="shortcut-tag"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> Запустити тести</span>
+          <span class="shortcut-tag"><kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>F</kbd> Автоформатування коду</span>
+          <span class="shortcut-tag"><kbd>Tab</kbd> Вставити 2 пробіли</span>
+          <span class="shortcut-tag"><kbd>Ctrl</kbd> + <kbd>S</kbd> Зберегти</span>
         </div>
 
         <!-- Results Console -->
@@ -945,7 +1052,7 @@
             <span id="testsSummaryText">0 / 0 пройшли</span>
           </div>
           <div id="testCasesContainer" class="test-cases-list">
-            <div style="color: var(--color-graphite); font-size: 13px; padding: 12px; text-align: center;">
+            <div style="color: var(--ink-muted); font-size: 13px; padding: 12px; text-align: center;">
               Натисніть «Перевірити рішення», щоб запустити тест-кейси для вашого коду.
             </div>
           </div>
@@ -1110,20 +1217,29 @@
 
     <!-- TAB 3: Mass Runner -->
     <div id="viewFullSuite" class="mass-runner-view card">
-      <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 12px;">📊 Масова перевірка розв'язків</h2>
-      <p style="color: var(--color-graphite); margin-bottom: 20px;">
-        Запустіть перевірку всіх 21 завдань одночасно для оцінки загального прогресу.
+      <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">📊 Масова перевірка розв'язків</h2>
+      <p style="color: var(--ink-muted); margin-bottom: 20px; font-size: 14px;">
+        Запустіть перевірку всіх 21 завдань курсу одночасно для оцінки загального прогресу у воркауті.
       </p>
-      <button class="btn-run" onclick="runAllTasksMassCheck()">
-        🚀 Запустити всі 21 тест зараз
-      </button>
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <button class="btn-run" onclick="runAllTasksMassCheck()">
+          🚀 Запустити всі 21 тест зараз
+        </button>
+      </div>
       <div class="progress-bar-container">
         <div id="massProgressBar" class="progress-bar-fill"></div>
       </div>
-      <div id="massSummaryText" style="font-weight: 700; font-size: 15px; margin-bottom: 16px;">
+      <div id="massSummaryText" style="font-weight: 700; font-size: 14px; margin-bottom: 16px; color: var(--ink);">
         Прогрес: 0 / 21 завдань вирішено (0%)
       </div>
-      <pre id="massConsoleLog" style="background: var(--editor-bg); color: #fff; padding: 20px; border-radius: 16px; font-family: var(--font-mono); font-size: 13px; height: 350px; overflow-y: auto; white-space: pre-wrap;"></pre>
+      
+      <div class="mass-terminal-wrapper">
+        <div class="mass-terminal-header">
+          <span>TERMINAL // MASS TEST SUITE (21 TASKS)</span>
+          <span id="massTerminalStatus" class="terminal-status-dot">READY</span>
+        </div>
+        <pre id="massConsoleLog" class="mass-console-pre">&gt; Натисніть «🚀 Запустити всі 21 тест зараз», щоб перевірити рішення всіх 21 завдань курсу...&#10;</pre>
+      </div>
     </div>
 
     <!-- TAB 4: Workflow Guide -->
@@ -1494,7 +1610,9 @@ git push origin solution/ivan-ivanov</code></pre>
 
     window.runAllTasksMassCheck = async function() {
       const log = document.getElementById('massConsoleLog');
-      log.textContent = '🚀 Початок масової перевірки завдань...\n';
+      const statusDot = document.getElementById('massTerminalStatus');
+      if (statusDot) statusDot.textContent = 'RUNNING...';
+      log.textContent = '🚀 ЗАПУСК МАСОВОЇ ПЕРЕВІРКИ ВСІХ 21 ЗАВДАНЬ...\n================================================\n';
       let totalPassed = 0;
       let totalTasks = 0;
 
@@ -1526,8 +1644,115 @@ git push origin solution/ivan-ivanov</code></pre>
       const percent = Math.round((totalPassed / totalTasks) * 100);
       document.getElementById('massProgressBar').style.width = `${percent}%`;
       document.getElementById('massSummaryText').textContent = `Прогрес: ${totalPassed} / ${totalTasks} завдань вирішено (${percent}%)`;
-      log.textContent += `\n🏁 Підсумок: ${totalPassed} із ${totalTasks} успішно (${percent}%)\n`;
+      log.textContent += `\n================================================\n🏁 ПІДСУМОК: ${totalPassed} із ${totalTasks} успішно пройдено (${percent}%)\n`;
+      if (statusDot) statusDot.textContent = totalPassed === totalTasks ? 'ALL PASSED' : 'DONE';
     };
+
+    
+    // Fallback JavaScript Beautifier
+    function beautifyJavaScript(code) {
+      if (!code) return '';
+      let indent = 0;
+      const lines = code.split('\n');
+      const formatted = [];
+      for (let rawLine of lines) {
+        let line = rawLine.trim();
+        if (!line) {
+          formatted.push('');
+          continue;
+        }
+        if (line.startsWith('}') || line.startsWith(']') || line.startsWith(')')) {
+          indent = Math.max(0, indent - 1);
+        }
+        formatted.push('  '.repeat(indent) + line);
+        if (line.endsWith('{') || line.endsWith('[') || line.endsWith('(')) {
+          indent++;
+        }
+      }
+      return formatted.join('\n');
+    }
+
+    // Code Formatting Function (Prettier with Fallback)
+    window.formatCurrentCode = async function() {
+      const editor = document.getElementById('codeEditor');
+      if (!editor) return;
+      const rawCode = editor.value;
+      const saveNotice = document.getElementById('saveNotice');
+
+      try {
+        if (window.prettier && window.prettierPlugins && window.prettierPlugins.babel) {
+          const plugins = [window.prettierPlugins.babel];
+          if (window.prettierPlugins.estree) plugins.push(window.prettierPlugins.estree);
+          const formatted = await window.prettier.format(rawCode, {
+            parser: 'babel',
+            plugins: plugins,
+            semi: true,
+            singleQuote: true,
+            tabWidth: 2,
+            trailingComma: 'none'
+          });
+          editor.value = formatted;
+          localStorage.setItem('cond_workout_code_' + currentTaskId, formatted);
+          if (saveNotice) {
+            saveNotice.textContent = 'Відформатовано та збережено ✨';
+            saveNotice.style.color = '#0b683b';
+            setTimeout(() => {
+              saveNotice.textContent = 'Збережено в локальне сховище ✓';
+              saveNotice.style.color = 'var(--ink-muted)';
+            }, 2000);
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn('Prettier format warning, falling back to beautifier:', err);
+      }
+
+      const fallback = beautifyJavaScript(rawCode);
+      editor.value = fallback;
+      localStorage.setItem('cond_workout_code_' + currentTaskId, fallback);
+      if (saveNotice) {
+        saveNotice.textContent = 'Відформатовано ✨';
+        saveNotice.style.color = '#0b683b';
+        setTimeout(() => {
+          saveNotice.textContent = 'Збережено в локальне сховище ✓';
+          saveNotice.style.color = 'var(--ink-muted)';
+        }, 2000);
+      }
+    };
+
+    // Tab key support in Code Editor
+    document.getElementById('codeEditor')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = e.target.selectionStart;
+        const end = e.target.selectionEnd;
+        e.target.value = e.target.value.substring(0, start) + '  ' + e.target.value.substring(end);
+        e.target.selectionStart = e.target.selectionEnd = start + 2;
+        localStorage.setItem('cond_workout_code_' + currentTaskId, e.target.value);
+      }
+    });
+
+    // Keyboard Shortcuts: Ctrl+Enter (Run) & Shift+Alt+F / Ctrl+Shift+F (Format) & Ctrl+S (Save)
+    window.addEventListener('keydown', (e) => {
+      // Run: Ctrl + Enter
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        runCurrentTaskTests();
+      }
+      // Format: Shift + Alt + F or Ctrl + Shift + F or Cmd + Shift + F
+      else if (
+        (e.shiftKey && e.altKey && (e.key === 'F' || e.key === 'f' || e.code === 'KeyF')) ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'F' || e.key === 'f' || e.code === 'KeyF'))
+      ) {
+        e.preventDefault();
+        window.formatCurrentCode();
+      }
+      // Save: Ctrl + S or Cmd + S
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        window.formatCurrentCode();
+      }
+    });
 
     function initOnlinePresence() {
       const badgeText = document.getElementById('onlineCountText');
